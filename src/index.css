@@ -1,0 +1,195 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-base-bg: #0B0A12;
+  --color-panel-bg: #15131F;
+  --color-hover-bg: #1E1B2E;
+  --color-border-accent: rgba(168, 130, 255, 0.12);
+  --color-accent-purple: var(--color-accent-purple, #8B5CF6);
+  --color-accent-purple-glow: var(--color-accent-purple-glow, rgba(168, 85, 247, 0.25));
+  
+  --color-text-primary: #EDEBF5;
+  --color-text-secondary: #8B879E;
+  --color-text-tertiary: #5C5870;
+  
+  --color-status-success: #7DD3A8;
+  --color-status-warning: #E0B565;
+  --color-status-error: #E07A7A;
+  
+  --font-sans: var(--ui-font-sans, "Inter", ui-sans-serif, system-ui, sans-serif);
+  --font-mono: var(--ui-font-mono, "JetBrains Mono", ui-monospace, SFMono-Regular, monospace);
+
+  --radius-xl: var(--ui-border-radius, 12px);
+  --radius-2xl: calc(var(--ui-border-radius, 12px) * 1.33);
+  --radius-lg: calc(var(--ui-border-radius, 12px) * 0.75);
+  --radius-md: calc(var(--ui-border-radius, 12px) * 0.5);
+  --radius-sm: calc(var(--ui-border-radius, 12px) * 0.25);
+}
+
+:root {
+  --color-accent-purple: #8B5CF6;
+  --color-accent-purple-glow: rgba(139, 92, 246, 0.25);
+  --ui-font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --ui-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --ui-border-radius: 12px;
+  --ui-density-padding: 16px;
+  --ui-density-gap: 16px;
+}
+
+/* Base resets & custom scrollbar */
+html, body {
+  background-color: var(--color-base-bg);
+  color: var(--color-text-primary);
+  font-family: var(--ui-font-sans), ui-sans-serif, system-ui, sans-serif;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* Light Theme Variables */
+.light {
+  --color-base-bg: #F5F4FF;
+  --color-panel-bg: #FFFFFF;
+  --color-hover-bg: #EAE8FF;
+  --color-border-accent: rgba(139, 92, 246, 0.15);
+  
+  --color-text-primary: #1A1830;
+  --color-text-secondary: #5C5870;
+  --color-text-tertiary: #8B879E;
+}
+
+.light .glass-panel {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+}
+
+.light .bg-mesh-clean {
+  background-color: #F5F4FF;
+}
+
+.light ::-webkit-scrollbar-track {
+  background: #F5F4FF;
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: #EAE8FF;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0B0A12;
+}
+::-webkit-scrollbar-thumb {
+  background: #1E1B2E;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent-purple);
+}
+
+/* Background gradient noise mesh */
+.bg-mesh {
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.06) 0%, transparent 45%);
+}
+
+.bg-mesh-noise {
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.06) 0%, transparent 45%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.015'/%3E%3C/svg%3E");
+}
+
+.bg-mesh-gradient {
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 90% 80%, rgba(217, 70, 239, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 40%);
+}
+
+.bg-mesh-clean {
+  background-image: none;
+  background-color: #0B0A12;
+}
+
+/* Premium micro glassmorphism */
+.glass-panel {
+  background: rgba(21, 19, 31, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(168, 130, 255, 0.12);
+}
+
+/* --- LIQUID GLASS MODE (Рідке скло) --- */
+.liquid-glass .glass-panel,
+.liquid-glass-card {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.02) 40%,
+    rgba(15, 13, 25, 0.65) 100%
+  ) !important;
+  backdrop-filter: blur(20px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 
+    0 10px 30px -5px rgba(0, 0, 0, 0.5),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.3),
+    0 0 15px var(--color-accent-purple-glow) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.liquid-glass .glass-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -50%;
+  width: 200%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.liquid-glass .glass-panel:hover {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 
+    0 15px 35px -5px rgba(0, 0, 0, 0.6),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.5),
+    0 0 25px var(--color-accent-purple-glow) !important;
+}
+
+/* Neon glow effect on hover */
+.glow-hover {
+  transition: all 0.2s ease-out;
+}
+.glow-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgba(139, 92, 246, 0.4);
+  box-shadow: 0 0 24px rgba(139, 92, 246, 0.15);
+}
+
+.glow-active {
+  box-shadow: 0 0 20px var(--color-accent-purple-glow);
+}
+
+/* Density helpers */
+.density-p {
+  padding: var(--ui-density-padding);
+}
+.density-gap {
+  gap: var(--ui-density-gap);
+}
