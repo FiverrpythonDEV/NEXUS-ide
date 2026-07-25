@@ -6,6 +6,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(() => {
   return {
+    // base: './' is critical for Electron — without it, built assets use
+    // absolute paths (/assets/...) which don't work with file:// protocol.
+    base: './',
     plugins: [
       react(), 
       tailwindcss(),
