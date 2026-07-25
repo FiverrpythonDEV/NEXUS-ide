@@ -1,5 +1,6 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -9,35 +10,43 @@ function createWindow() {
     minHeight: 600,
     title: 'NEXUS',
     backgroundColor: '#0B0A12',
+    show: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: false, // needed for local file:// loading in packaged app
+      webSecurity: false,
       preload: path.join(__dirname, 'preload.js')
     },
   });
 
   win.setMenuBarVisibility(false);
+  win.once('ready-to-show', () => win.show());
 
   if (app.isPackaged) {
-    // In packaged AppImage/deb, use app.getAppPath() which correctly
-    // resolves to the root of the packaged app (where dist/ lives)
-    const indexPath = path.join(app.getAppPath(), 'dist', 'index.html');
-    win.loadFile(indexPath).catch((err) => {
-      console.error('Failed to load index.html:', err);
-      // Fallback: try relative to __dirname
-      win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
-    });
+    const possiblePaths = [
+      path.join(app.getAppPath(), 'dist', 'index.html'),
+      path.join(process.resourcesPath, 'app', 'dist', 'index.html'),
+      path.join(__dirname, '..', 'dist', 'index.html'),
+    ];
+
+    const indexPath = possiblePaths.find(p => fs.existsSync(p));
+
+    if (indexPath) {
+      win.loadFile(indexPath);
+    } else {
+      win.loadURL(`data:text/html,<body style="background:#0B0A12;color:#A855F7;font-family:monospace;padding:40px">
+        <h2>NEXUS — path error</h2>
+        <p>Checked:</p>
+        <ul>${possiblePaths.map(p => `<li>${p} — ${fs.existsSync(p) ? '✓' : '✗'}</li>`).join('')}</ul>
+        <p>appPath: ${app.getAppPath()}</p>
+        <p>resourcesPath: ${process.resourcesPath}</p>
+        <p>__dirname: ${__dirname}</p>
+      </body>`);
+    }
   } else {
-    const devUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:3000';
-    win.loadURL(devUrl).catch(() => {
+    win.loadURL('http://localhost:3000').catch(() => {
       win.loadFile(path.join(app.getAppPath(), 'dist', 'index.html'));
     });
-  }
-
-  // Open DevTools only in dev mode
-  if (!app.isPackaged) {
-    win.webContents.openDevTools();
   }
 }
 

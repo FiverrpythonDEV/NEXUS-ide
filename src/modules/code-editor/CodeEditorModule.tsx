@@ -54,9 +54,33 @@ import {
   BarChart2,
   FileText,
   Sparkles,
-  Layers
+  Layers,
+  GitBranch,
+  Bug,
+  Puzzle,
+  FileJson,
+  CheckCircle2,
+  SlidersHorizontal
 } from 'lucide-react';
 import { CodeFile } from '../../types';
+
+import { fileSystemService } from '../../core/filesystem/FileSystemService';
+import { editorService } from '../../core/editor/EditorService';
+import { commandRegistry } from '../../core/commands/CommandRegistry';
+import { extensionEngine } from '../../core/extensions/ExtensionEngine';
+import { languageServerService } from '../../services/lsp/LanguageServerService';
+import { gitService } from '../../services/git/GitService';
+import { debugService } from '../../services/debugger/DebugService';
+import { settingsService } from '../../core/settings/SettingsService';
+
+import { FileExplorer } from '../../ui/explorer/FileExplorer';
+import { TabBar } from '../../ui/tabs/TabBar';
+import { QuickOpenModal } from '../../ui/panels/QuickOpenModal';
+import { SearchReplacePanel } from '../../ui/panels/SearchReplacePanel';
+import { GitPanel } from '../../ui/panels/GitPanel';
+import { DebugPanel } from '../../ui/panels/DebugPanel';
+import { ExtensionsPanel } from '../../ui/panels/ExtensionsPanel';
+import { SettingsJsonEditor } from '../../ui/panels/SettingsJsonEditor';
 
 const DEFAULT_FILES: CodeFile[] = [
   {
@@ -661,6 +685,29 @@ export const CodeEditorModule: React.FC = () => {
   useEffect(() => {
     editorContentRef.current = editorContent;
   }, [editorContent]);
+
+  // IDE Activity Bar & Quick Open States
+  const [activeSidebarTab, setActiveSidebarTab] = useState<'explorer' | 'search' | 'git' | 'debugger' | 'extensions' | 'settings'>('explorer');
+  const [isQuickOpenOpen, setIsQuickOpenOpen] = useState(false);
+
+  // Global Hotkeys for IDE
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        setIsQuickOpenOpen((prev) => !prev);
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setActiveSidebarTab('search');
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        editorService.saveActiveTab();
+        toast.success(lang === 'uk' ? 'Файл збережено!' : 'File saved!');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lang]);
 
   // Console Log State
   const [isConsoleOpen, setIsConsoleOpen] = useState(true);
@@ -1636,6 +1683,9 @@ export const CodeEditorModule: React.FC = () => {
   };
 
   const setupTheme = (monaco: any) => {
+    // Register NEXUS Language Server Intellisense Providers
+    languageServerService.registerMonacoProviders(monaco);
+
     // Custom Nexus cyber-purple dark theme
     monaco.editor.defineTheme('nexus-dark', {
       base: 'vs-dark',
@@ -1686,172 +1736,103 @@ export const CodeEditorModule: React.FC = () => {
   return (
     <div className="flex h-[calc(100vh-140px)] gap-4 select-none relative font-sans">
       
-      {/* 1. Left Sidebar: Explorer / Global Search / Options */}
-      <div className="w-64 bg-[#15131F]/30 border border-border-accent/40 rounded-xl p-3 flex flex-col justify-between shrink-0">
-        <div className="space-y-4">
-          
-          {/* Explorer: Files */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between border-b border-border-accent/15 pb-1.5 mb-1.5">
-              <span className="text-[10px] uppercase font-mono tracking-wider font-bold text-[#8B879E] flex items-center gap-1.5">
-                <FolderOpen className="w-3.5 h-3.5 text-accent-purple" />
-                {lang === 'uk' ? 'Провідник Файлів' : 'File Explorer'}
-              </span>
-              <Button 
-                type="button"
-                onClick={() => setIsNewFileModalOpen(true)}
-                className="p-1 h-5 w-5 bg-accent-purple/10 hover:bg-accent-purple/25 text-accent-purple rounded flex items-center justify-center border border-accent-purple/20 transition-all cursor-pointer"
-                title={lang === 'uk' ? 'Новий файл' : 'New File'}
-              >
-                <Plus className="w-3 h-3" />
-              </Button>
-            </div>
+      {/* 1. VS Code Style Activity Bar + Active Panel */}
+      <div className="flex shrink-0 h-full border border-purple-900/30 rounded-xl overflow-hidden bg-[#0d0a18]/80 shadow-2xl">
+        {/* Vertical Activity Bar */}
+        <div className="w-12 bg-[#080612] border-r border-purple-900/30 flex flex-col items-center py-3 justify-between shrink-0 select-none">
+          <div className="flex flex-col items-center gap-4">
+            <button
+              onClick={() => setActiveSidebarTab('explorer')}
+              title="File Explorer (Ctrl+Shift+E)"
+              className={`p-2 rounded-lg transition-all ${
+                activeSidebarTab === 'explorer'
+                  ? 'bg-purple-600/30 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-950'
+                  : 'text-gray-500 hover:text-gray-200 hover:bg-white/5'
+              }`}
+            >
+              <FolderOpen className="w-5 h-5" />
+            </button>
 
-            <div className="space-y-1 overflow-y-auto max-h-[calc(100vh-280px)] custom-scrollbar pr-0.5">
-              {files.map(file => {
-                const isSelected = file.id === activeFileId && !isDiffMode;
-                return (
-                  <div
-                    key={file.id}
-                    onClick={() => openTab(file.id)}
-                    className={`group flex items-center justify-between p-1.5 px-2 rounded-lg cursor-pointer transition-all border ${
-                      isSelected 
-                        ? 'bg-accent-purple/10 text-[#EDEBF5] border-accent-purple/30 shadow-[0_0_12px_var(--color-accent-purple-glow)]' 
-                        : 'border-transparent text-[#8B879E] hover:text-[#EDEBF5] hover:bg-[#1E1B2E]/40'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 overflow-hidden w-[78%] pr-1">
-                      <FileCode2 className={`w-3.5 h-3.5 shrink-0 ${getLanguageColor(file.language)}`} />
-                      <span className="text-[11px] font-medium truncate">{file.name}</span>
-                    </div>
+            <button
+              onClick={() => setActiveSidebarTab('search')}
+              title="Global Search & Replace (Ctrl+Shift+F)"
+              className={`p-2 rounded-lg transition-all ${
+                activeSidebarTab === 'search'
+                  ? 'bg-purple-600/30 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-950'
+                  : 'text-gray-500 hover:text-gray-200 hover:bg-white/5'
+              }`}
+            >
+              <Search className="w-5 h-5" />
+            </button>
 
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        handleDeleteFile(file.id, file.name);
-                      }}
-                      className="p-1 text-red-400/80 hover:text-red-400 hover:bg-red-500/20 rounded transition-all shrink-0 cursor-pointer"
-                      title={lang === 'uk' ? `Видалити файл "${file.name}"` : `Delete file "${file.name}"`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+            <button
+              onClick={() => setActiveSidebarTab('git')}
+              title="Source Control (Git)"
+              className={`p-2 rounded-lg transition-all ${
+                activeSidebarTab === 'git'
+                  ? 'bg-purple-600/30 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-950'
+                  : 'text-gray-500 hover:text-gray-200 hover:bg-white/5'
+              }`}
+            >
+              <GitBranch className="w-5 h-5" />
+            </button>
+
+            <button
+              onClick={() => setActiveSidebarTab('debugger')}
+              title="Debugger"
+              className={`p-2 rounded-lg transition-all ${
+                activeSidebarTab === 'debugger'
+                  ? 'bg-purple-600/30 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-950'
+                  : 'text-gray-500 hover:text-gray-200 hover:bg-white/5'
+              }`}
+            >
+              <Bug className="w-5 h-5" />
+            </button>
+
+            <button
+              onClick={() => setActiveSidebarTab('extensions')}
+              title="Extensions Manager"
+              className={`p-2 rounded-lg transition-all ${
+                activeSidebarTab === 'extensions'
+                  ? 'bg-purple-600/30 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-950'
+                  : 'text-gray-500 hover:text-gray-200 hover:bg-white/5'
+              }`}
+            >
+              <Puzzle className="w-5 h-5" />
+            </button>
           </div>
 
-          {/* Global Search & Replace (Ctrl+Shift+F equivalent panel) */}
-          <div className="border-t border-border-accent/15 pt-3">
-            <span className="text-[10px] uppercase font-mono tracking-wider font-bold text-[#8B879E] flex items-center gap-1.5 mb-2">
-              <Search className="w-3.5 h-3.5 text-accent-purple" />
-              {lang === 'uk' ? 'Пошук та Заміна' : 'Search & Replace'}
-            </span>
-            <div className="space-y-2">
-              <input
-                type="text"
-                placeholder={lang === 'uk' ? 'Шукати...' : 'Find text...'}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#121019] border border-border-accent/20 rounded-md text-[10px] p-1.5 text-text-primary placeholder:text-text-tertiary focus:outline-hidden focus:border-accent-purple/40"
-              />
-              <input
-                type="text"
-                placeholder={lang === 'uk' ? 'Замінити на...' : 'Replace with...'}
-                value={replaceQuery}
-                onChange={(e) => setReplaceQuery(e.target.value)}
-                className="w-full bg-[#121019] border border-border-accent/20 rounded-md text-[10px] p-1.5 text-text-primary placeholder:text-text-tertiary focus:outline-hidden focus:border-accent-purple/40"
-              />
-
-              <div className="grid grid-cols-2 gap-1.5">
-                <button
-                  type="button"
-                  onClick={handleGlobalSearch}
-                  className="bg-accent-purple/10 border border-accent-purple/30 text-accent-purple hover:bg-accent-purple/20 transition-all rounded py-1 text-[10px] font-bold cursor-pointer"
-                >
-                  {lang === 'uk' ? 'Знайти' : 'Find'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleGlobalReplace}
-                  className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition-all rounded py-1 text-[10px] font-bold cursor-pointer"
-                >
-                  {lang === 'uk' ? 'Замінити все' : 'Replace All'}
-                </button>
-              </div>
-
-              {/* Search Results list */}
-              {searchResults.length > 0 && (
-                <div className="max-h-[110px] overflow-y-auto border border-border-accent/15 rounded-md p-1.5 space-y-1 bg-[#121019] custom-scrollbar text-[9px] font-mono">
-                  {searchResults.map((res, rIdx) => (
-                    <div
-                      key={rIdx}
-                      onClick={() => {
-                        openTab(res.fileId);
-                        // Jump editor position can be accomplished on the active state
-                      }}
-                      className="p-1 hover:bg-[#1E1B2E] rounded cursor-pointer text-text-secondary truncate"
-                      title={`${res.fileName}:${res.line} - ${res.text}`}
-                    >
-                      <span className="text-accent-purple font-bold">{res.fileName}:{res.line}</span> {res.text}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          <div className="flex flex-col items-center gap-3">
+            <button
+              onClick={() => setActiveSidebarTab('settings')}
+              title="settings.json Settings"
+              className={`p-2 rounded-lg transition-all ${
+                activeSidebarTab === 'settings'
+                  ? 'bg-purple-600/30 text-purple-300 border border-purple-500/50 shadow-lg shadow-purple-950'
+                  : 'text-gray-500 hover:text-gray-200 hover:bg-white/5'
+              }`}
+            >
+              <FileJson className="w-5 h-5" />
+            </button>
           </div>
-
         </div>
 
-        {/* Workspace Configurations Sidebar Footer */}
-        <div className="bg-[#1E1B2E]/30 p-2.5 rounded-lg border border-border-accent/10 space-y-2">
-          <div className="flex items-center gap-1.5 border-b border-border-accent/10 pb-1.5">
-            <Settings className="w-3 h-3 text-accent-purple" />
-            <span className="text-[9px] font-bold text-[#8B879E] uppercase tracking-wider">
-              {lang === 'uk' ? 'Налаштування' : 'Preferences'}
-            </span>
-          </div>
-
-          <div className="space-y-1.5">
-            {/* Theme selector */}
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[9px] text-text-tertiary">Monaco:</span>
-              <select
-                value={editorTheme}
-                onChange={(e: any) => setEditorTheme(e.target.value)}
-                className="bg-[#121019] border border-border-accent/20 rounded-md text-[9px] font-mono p-1 text-text-secondary cursor-pointer focus:outline-hidden"
-              >
-                <option value="nexus-dark">Nexus Dark</option>
-                <option value="vs-dark">VS Code Dark</option>
-                <option value="light">VS Code Light</option>
-                <option value="monokai">Monokai Retro</option>
-              </select>
-            </div>
-
-            {/* Minimap toggle */}
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] text-text-tertiary">{lang === 'uk' ? 'Міні-карта:' : 'Minimap:'}</span>
-              <input 
-                type="checkbox" 
-                checked={settings.editorMinimap !== false} 
-                onChange={(e) => updateSettings({ editorMinimap: e.target.checked })}
-                className="w-3 h-3 rounded bg-base-bg border-border-accent cursor-pointer accent-accent-purple"
-              />
-            </div>
-
-            {/* Word wrap toggle */}
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] text-text-tertiary">{lang === 'uk' ? 'Перенос рядків:' : 'Word Wrap:'}</span>
-              <button 
-                onClick={() => updateSettings({ editorWordWrap: settings.editorWordWrap !== false ? false : true })}
-                className="text-[9px] font-mono font-bold text-accent-purple cursor-pointer hover:underline"
-              >
-                {(settings.editorWordWrap !== false) ? (lang === 'uk' ? 'ВКЛ' : 'ON') : (lang === 'uk' ? 'ВИКЛ' : 'OFF')}
-              </button>
-            </div>
-          </div>
+        {/* Dynamic Sidebar Panel Content */}
+        <div className="w-64 h-full">
+          {activeSidebarTab === 'explorer' && <FileExplorer onOpenFile={(node) => openTab(node.id)} />}
+          {activeSidebarTab === 'search' && <SearchReplacePanel />}
+          {activeSidebarTab === 'git' && (
+            <GitPanel
+              onOpenDiff={(change) => {
+                setDiffOriginalText(change.originalContent);
+                setDiffModifiedText(change.currentContent);
+                setIsDiffMode(true);
+              }}
+            />
+          )}
+          {activeSidebarTab === 'debugger' && <DebugPanel />}
+          {activeSidebarTab === 'extensions' && <ExtensionsPanel />}
+          {activeSidebarTab === 'settings' && <SettingsJsonEditor />}
         </div>
       </div>
 
@@ -2795,6 +2776,12 @@ export const CodeEditorModule: React.FC = () => {
         filename={activeFile?.name || 'script.py'}
         language={activeFile?.language}
         lang={lang}
+      />
+
+      {/* Quick Open Ctrl+P Modal */}
+      <QuickOpenModal
+        isOpen={isQuickOpenOpen}
+        onClose={() => setIsQuickOpenOpen(false)}
       />
 
     </div>
