@@ -17,7 +17,8 @@
     "productName": "Nexus IDE",
     "files": [
       "dist/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "public/**/*"
     ],
     "directories": {
       "output": "release"
@@ -38,7 +39,8 @@
       ],
       "category": "Development",
       "icon": "public/icon-512.png"
-    }
+    },
+    "asar": false
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
