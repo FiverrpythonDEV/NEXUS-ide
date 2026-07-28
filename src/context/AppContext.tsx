@@ -67,6 +67,11 @@ export const useAppContext = () => {
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [viewMode, setViewModeState] = useState<'landing' | 'app'>(() => {
+    // In Electron (window.electronAPI exists or no location.hostname),
+    // always start in app mode — skip the landing page entirely.
+    const isElectron = typeof window !== 'undefined' && 
+      (window.location.protocol === 'file:' || (window as any).electronAPI !== undefined);
+    if (isElectron) return 'app';
     return (localStorage.getItem('nexus_view_mode') as 'landing' | 'app') || 'landing';
   });
   const [activeModule, setActiveModule] = useState<ModuleId>('dashboard');
