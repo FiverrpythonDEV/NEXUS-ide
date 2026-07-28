@@ -1684,14 +1684,12 @@ export const CodeEditorModule: React.FC = () => {
 
   const setupTheme = (monaco: any) => {
     // Fix Monaco workers for Electron file:// protocol
-    // Without this, Monaco shows blank/blue in packaged Electron apps
-    (self as any).MonacoEnvironment = {
-      getWorker: function (_: any, label: string) {
-        const workerCode = 'self.onmessage=function(e){};';
-        const blob = new Blob([workerCode], { type: 'application/javascript' });
-        return new Worker(URL.createObjectURL(blob));
-      }
-    };
+    if ((window as any).electronAPI?.isElectron) {
+      monaco.editor.createWebWorker = () => null;
+      (self as any).MonacoEnvironment = {
+        getWorker: (_moduleId: string, _label: string) => null as any,
+      };
+    }
 
     // Register NEXUS Language Server Intellisense Providers
     languageServerService.registerMonacoProviders(monaco);
