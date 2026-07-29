@@ -43,7 +43,7 @@ export default defineConfig(() => {
           ]
         },
         workbox: {
-          maximumFileSizeToCacheInBytes: 6000000,
+          maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB for Monaco workers
           globPatterns: ['**/*.{js,css,html,png,svg,woff,woff2,ico}'],
           runtimeCaching: [
             {

@@ -3,24 +3,12 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-// Monaco Editor worker fix for Electron
-// Must be set BEFORE any Monaco import or React render
-// This runs synchronously before anything else loads
-(window as any).MonacoEnvironment = {
-  getWorker: function() {
-    // Return a minimal inline worker that does nothing
-    // This prevents the "blue screen" caused by Monaco trying
-    // to load workers via absolute URLs in file:// protocol
-    const workerSrc = `
-      self.onmessage = function(e) {
-        // minimal worker stub
-      };
-    `;
-    const blob = new Blob([workerSrc], { type: 'text/javascript' });
-    const url = URL.createObjectURL(blob);
-    return new Worker(url);
-  }
-};
+// Configure @monaco-editor/react to use bundled Monaco
+// instead of loading from CDN — CDN URLs fail in Electron file:// protocol
+import { loader } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
+
+loader.config({ monaco });
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
