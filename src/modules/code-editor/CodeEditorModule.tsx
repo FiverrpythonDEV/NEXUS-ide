@@ -1684,6 +1684,10 @@ export const CodeEditorModule: React.FC = () => {
 
   const setupTheme = (monaco: any) => {
     // Fix Monaco workers for Electron file:// protocol
+    // Electron blocks blob: URLs for workers in some security contexts.
+    // Setting getWorker to return null disables web workers entirely —
+    // Monaco falls back to running language services on the main thread,
+    // which is slower but works reliably in all Electron versions.
     if ((window as any).electronAPI?.isElectron) {
       monaco.editor.createWebWorker = () => null;
       (self as any).MonacoEnvironment = {
